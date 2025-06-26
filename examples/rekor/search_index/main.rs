@@ -109,6 +109,7 @@ async fn main() {
                 .unwrap_or(&HASH.to_string())
                 .to_owned(),
         ),
+        operator: None,
     };
     let configuration = Configuration::default();
 

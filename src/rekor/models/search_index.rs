@@ -18,6 +18,8 @@ pub struct SearchIndex {
     pub public_key: Option<crate::rekor::models::search_index_public_key::SearchIndexPublicKey>,
     #[serde(rename = "hash", skip_serializing_if = "Option::is_none")]
     pub hash: Option<String>,
+    #[serde(rename = "operator", skip_serializing_if = "Option::is_none")]
+    pub operator: Option<Operator>,
 }
 
 impl SearchIndex {
@@ -26,6 +28,15 @@ impl SearchIndex {
             email: None,
             public_key: None,
             hash: None,
+            operator: None,
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+pub enum Operator {
+    #[serde(rename = "and")]
+    And,
+    #[serde(rename = "or")]
+    Or,
 }
