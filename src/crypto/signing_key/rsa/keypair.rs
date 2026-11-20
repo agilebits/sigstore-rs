@@ -40,10 +40,7 @@
 //! ```
 
 use pkcs8::{DecodePrivateKey, EncodePrivateKey, EncodePublicKey};
-use rsa::{
-    pkcs1::DecodeRsaPrivateKey, pkcs1v15::SigningKey, pss::BlindedSigningKey, RsaPrivateKey,
-    RsaPublicKey,
-};
+use rsa::{pkcs1::DecodeRsaPrivateKey, pkcs1v15::SigningKey, pss, PrivateKey, PublicKey};
 
 use crate::{
     crypto::{CosignVerificationKey, SigStoreSigner, SigningScheme},
@@ -59,8 +56,8 @@ use super::{DigestAlgorithm, PaddingScheme, RSASigner};
 
 #[derive(Clone, Debug)]
 pub struct RSAKeys {
-    pub(crate) private_key: RsaPrivateKey,
-    public_key: RsaPublicKey,
+    pub(crate) private_key: PrivateKey,
+    public_key: PublicKey,
 }
 
 impl RSAKeys {
@@ -68,9 +65,9 @@ impl RSAKeys {
     /// The private key will be randomly
     /// generated.
     pub fn new(bit_size: usize) -> Result<Self> {
-        let mut rng = rand::rngs::OsRng {};
-        let private_key = RsaPrivateKey::new(&mut rng, bit_size)?;
-        let public_key = RsaPublicKey::from(&private_key);
+        let mut rng = rand::rand_core::UnwrapErr(rand::rngs::SysRng);
+        let private_key = PrivateKey::new(&mut rng, bit_size)?;
+        let public_key = PublicKey::from(&private_key);
         Ok(Self {
             private_key,
             public_key,
@@ -94,7 +91,7 @@ impl RSAKeys {
                 let pkcs8 = pkcs8::PrivateKeyInfo::try_from(&der[..]).map_err(|e| {
                     SigstoreError::PKCS8Error(format!("Read PrivateKeyInfo failed: {e}"))
                 })?;
-                let private_key = RsaPrivateKey::try_from(pkcs8).map_err(|e| {
+                let private_key = PrivateKey::try_from(pkcs8).map_err(|e| {
                     SigstoreError::PKCS8Error(format!(
                         "Convert from pkcs8 pem to rsa private key failed: {e}"
                     ))
@@ -120,7 +117,7 @@ impl RSAKeys {
                 let pkcs8 = pkcs8::PrivateKeyInfo::try_from(document.as_bytes()).map_err(|e| {
                     SigstoreError::PKCS8Error(format!("Read PrivateKeyInfo failed: {e}"))
                 })?;
-                let private_key = RsaPrivateKey::try_from(pkcs8).map_err(|e| {
+                let private_key = PrivateKey::try_from(pkcs8).map_err(|e| {
                     SigstoreError::PKCS8Error(format!(
                         "Convert from pkcs8 pem to rsa private key failed: {e}"
                     ))
@@ -129,7 +126,7 @@ impl RSAKeys {
             }
 
             RSA_PRIVATE_KEY_PEM_LABEL => {
-                let private_key = RsaPrivateKey::from_pkcs1_der(document.as_bytes())?;
+                let private_key = PrivateKey::from_pkcs1_der(document.as_bytes())?;
                 Ok(Self::from(private_key))
             }
 
@@ -141,7 +138,7 @@ impl RSAKeys {
 
     /// Builds a `RSAKeys` from a pkcs8 asn.1 private key.
     pub fn from_der(der_bytes: &[u8]) -> Result<Self> {
-        let private_key = RsaPrivateKey::from_pkcs8_der(der_bytes).map_err(|e| {
+        let private_key = PrivateKey::from_pkcs8_der(der_bytes).map_err(|e| {
             SigstoreError::PKCS8Error(format!(
                 "Convert from pkcs8 der to rsa private key failed: {e}"
             ))
@@ -161,19 +158,19 @@ impl RSAKeys {
             PaddingScheme::PSS => match digest_algorithm {
                 DigestAlgorithm::Sha256 => {
                     SigStoreSigner::RSA_PSS_SHA256(RSASigner::RSA_PSS_SHA256(
-                        BlindedSigningKey::<sha2::Sha256>::new(private_key),
+                        pss::SigningKey::<sha2::Sha256>::new(private_key),
                         self.clone(),
                     ))
                 }
                 DigestAlgorithm::Sha384 => {
                     SigStoreSigner::RSA_PSS_SHA384(RSASigner::RSA_PSS_SHA384(
-                        BlindedSigningKey::<sha2::Sha384>::new(private_key),
+                        pss::SigningKey::<sha2::Sha384>::new(private_key),
                         self.clone(),
                     ))
                 }
                 DigestAlgorithm::Sha512 => {
                     SigStoreSigner::RSA_PSS_SHA512(RSASigner::RSA_PSS_SHA512(
-                        BlindedSigningKey::<sha2::Sha512>::new(private_key),
+                        pss::SigningKey::<sha2::Sha512>::new(private_key),
                         self.clone(),
                     ))
                 }
@@ -202,11 +199,11 @@ impl RSAKeys {
     }
 }
 
-impl From<RsaPrivateKey> for RSAKeys {
-    fn from(private_key: RsaPrivateKey) -> Self {
+impl From<PrivateKey> for RSAKeys {
+    fn from(private_key: PrivateKey) -> Self {
         Self {
             private_key: private_key.clone(),
-            public_key: RsaPublicKey::from(private_key),
+            public_key: PublicKey::from(private_key),
         }
     }
 }
