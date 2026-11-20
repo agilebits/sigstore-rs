@@ -10,19 +10,19 @@ repository = "https://github.com/sigstore/sigstore-rs"
 
 [features]
 default = ["full-native-tls", "cached-client", "sigstore-trust-root", "bundle"]
-wasm = ["getrandom/js", "ring/wasm32_unknown_unknown_js", "chrono/wasmbind"]
+wasm = ["getrandom/wasm_js", "ring/wasm32_unknown_unknown_js", "chrono/wasmbind"]
 
 full-native-tls = [
-  "fulcio-native-tls",
-  "rekor-native-tls",
-  "cosign-native-tls",
-  "mock-client-native-tls",
+    "fulcio-native-tls",
+    "rekor-native-tls",
+    "cosign-native-tls",
+    "mock-client-native-tls",
 ]
 full-rustls-tls = [
-  "fulcio-rustls-tls",
-  "rekor-rustls-tls",
-  "cosign-rustls-tls",
-  "mock-client-rustls-tls",
+    "fulcio-rustls-tls",
+    "rekor-rustls-tls",
+    "cosign-rustls-tls",
+    "mock-client-rustls-tls",
 ]
 
 # This features is used by tests that use docker to create a registry
@@ -41,23 +41,23 @@ rekor-rustls-tls = ["reqwest/rustls-tls", "rekor"]
 rekor = ["reqwest", "rekor-models"]
 rekor-models = []
 
-sign = ["sigstore_protobuf_specs", "fulcio", "rekor", "cert"]
-verify = ["sigstore_protobuf_specs", "rekor-models", "cert"]
+sign = ["sigstore_protobuf_specs", "fulcio", "rekor", "cert", "digest-io"]
+verify = ["sigstore_protobuf_specs", "rekor-models", "cert", "digest-io"]
 bundle = ["sign", "verify"]
 
 sigstore-trust-root = ["sigstore_protobuf_specs", "futures-util", "tough", "regex", "tokio/sync"]
 
 cosign-native-tls = [
-  "oci-distribution/native-tls",
-  "cert",
-  "cosign",
-  "registry-native-tls",
+    "oci-distribution/native-tls",
+    "cert",
+    "cosign",
+    "registry-native-tls",
 ]
 cosign-rustls-tls = [
-  "oci-distribution/rustls-tls",
-  "cert",
-  "cosign",
-  "registry-rustls-tls",
+    "oci-distribution/rustls-tls",
+    "cert",
+    "cosign",
+    "registry-rustls-tls",
 ]
 cosign = ["olpc-cjson"]
 cert = []
@@ -78,12 +78,13 @@ base64 = "0.22.0"
 cached = { version = "0.51.3", optional = true, features = ["async"] }
 cfg-if = "1.0.0"
 chrono = { version = "0.4.27", default-features = false, features = ["now", "serde"] }
-const-oid = { version = "0.9.6", features = ["db"] }
-digest = { version = "0.10.3", default-features = false }
-ecdsa = { version = "0.16.7", features = ["pkcs8", "digest", "der", "signing"] }
-ed25519 = { version = "2.2.1", features = ["alloc"] }
-ed25519-dalek = { version = "2.0.0-rc.2", features = ["pkcs8", "rand_core"] }
-elliptic-curve = { version = "0.13.5", features = ["arithmetic", "pem"] }
+const-oid = { version = "0.10.3", features = ["db"] }
+digest = { version = "0.11.3", default-features = false }
+digest-io = { version = "0.1.0", optional = true }
+ecdsa = { version = "0.17.0", features = ["pkcs8", "digest", "der", "algorithm"] }
+ed25519 = { version = "3.0.0", features = ["alloc"] }
+ed25519-dalek = { version = "3.0.0", features = ["alloc", "pkcs8", "rand_core"] }
+elliptic-curve = { version = "0.14.3", features = ["arithmetic", "pem"] }
 futures = "0.3"
 futures-util = { version = "0.3.30", optional = true }
 lazy_static = "1.4.0"
@@ -93,30 +94,29 @@ openidconnect = { version = "4.0", default-features = false, features = [
   "reqwest",
   "reqwest-blocking"
 ], optional = true }
-p256 = "0.13"
-p384 = "0.13"
+p256 = "0.14.0"
+p384 = "0.14.0"
 pem = { version = "3.0", features = ["serde"] }
-pkcs1 = { version = "0.7.5", features = ["std"] }
-pkcs8 = { version = "0.10.2", features = [
-  "pem",
-  "alloc",
-  "pkcs5",
-  "encryption",
+pkcs1 = { version = "0.8.0", features = ["std"] }
+pkcs8 = { version = "0.11.0", features = [
+    "pem",
+    "alloc",
+    "encryption",
 ] }
-rand = { version = "0.8.5", features = ["getrandom", "std"] }
-getrandom = "0.2.8"
+rand = { version = "0.10.4", features = ["std"] }
+getrandom = "0.4.3"
 regex = { version = "1.5.5", optional = true }
 reqwest = { version = "0.12", default-features = false, features = [
-  "json",
-  "multipart",
+    "json",
+    "multipart",
 ], optional = true }
-rsa = "0.9.2"
-scrypt = "0.11.0"
+rsa = { version = "0.10.0", features = ["pkcs1v15"] }
+scrypt = "0.12.0"
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.79"
 serde_with = { version = "3.4.0", features = ["base64", "json"], optional = true }
-sha2 = { version = "0.10.6", features = ["oid"] }
-signature = { version = "2.0" }
+sha2 = { version = "0.11.1", features = ["oid"] }
+signature = { version = "3.0.0" }
 sigstore_protobuf_specs = { version = "0.3.2", optional = true }
 thiserror = "1.0.30"
 tokio = { version = "1.17.0", features = ["rt"] }
@@ -124,7 +124,7 @@ tokio-util = { version = "0.7.10", features = ["io-util"] }
 tough = { version = "0.19.0", features = ["http"], optional = true }
 tracing = "0.1.31"
 url = "2.2.2"
-x509-cert = { version = "0.2.5", features = ["builder", "pem", "std", "sct"] }
+x509-cert = { version = "0.3.0", features = ["builder", "pem", "std", "sct"] }
 crypto_secretbox = "0.1.1"
 zeroize = "1.5.7"
 rustls-webpki = { version = "0.103", features = ["alloc"] }

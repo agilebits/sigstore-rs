@@ -18,11 +18,13 @@ use std::io::{self, Read};
 use std::time::SystemTime;
 
 use base64::{engine::general_purpose::STANDARD as base64, Engine as _};
+use digest_io::IoWrapper;
+use elliptic_curve::Generate;
 use hex;
 use p256::NistP256;
-use pkcs8::der::{Encode, EncodePem};
+use pkcs8::der::{Decode, Encode, EncodePem};
 use sha2::{Digest, Sha256};
-use signature::DigestSigner;
+use signature::hazmat::PrehashSigner;
 use sigstore_protobuf_specs::dev::sigstore::bundle::v1::bundle;
 use sigstore_protobuf_specs::dev::sigstore::bundle::v1::{
     verification_material, Bundle, VerificationMaterial,
@@ -37,6 +39,7 @@ use url::Url;
 use x509_cert::attr::{AttributeTypeAndValue, AttributeValue};
 use x509_cert::builder::{Builder, RequestBuilder as CertRequestBuilder};
 use x509_cert::ext::pkix as x509_ext;
+use x509_cert::name::{Name, RdnSequence};
 
 use crate::bundle::models::Version;
 use crate::errors::{Result as SigstoreResult, SigstoreError};
@@ -79,7 +82,7 @@ impl<'ctx> SigningSession<'ctx> {
         fulcio: &FulcioClient,
         token: &IdentityToken,
     ) -> SigstoreResult<(ecdsa::SigningKey<NistP256>, fulcio::CertificateResponse)> {
-        let subject =
+        let subject: RdnSequence =
                 // SEQUENCE OF RelativeDistinguishedName
                 vec![
                     // SET OF AttributeTypeAndValue
@@ -89,21 +92,23 @@ impl<'ctx> SigningSession<'ctx> {
                             oid: const_oid::db::rfc3280::EMAIL_ADDRESS,
                             value: AttributeValue::new(
                                 pkcs8::der::Tag::Utf8String,
-                                token.unverified_claims().email.as_ref(),
+                                token.unverified_claims().email.as_bytes(),
                             )?,
                         }
                     ].try_into()?
                 ].into();
+        // Need to roundtrip through DER since x509-cert only constructs `Name` via parsing.
+        let subject = Name::from_der(&subject.to_der()?)?;
 
-        let mut rng = rand::thread_rng();
-        let private_key = ecdsa::SigningKey::from(p256::SecretKey::random(&mut rng));
-        let mut builder = CertRequestBuilder::new(subject, &private_key)?;
+        let mut rng = rand::rng();
+        let private_key = ecdsa::SigningKey::from(p256::SecretKey::generate_from_rng(&mut rng));
+        let mut builder = CertRequestBuilder::new(subject)?;
         builder.add_extension(&x509_ext::BasicConstraints {
             ca: false,
             path_len_constraint: None,
         })?;
 
-        let cert_req = builder.build::<p256::ecdsa::DerSignature>()?;
+        let cert_req = builder.build::<_, p256::ecdsa::DerSignature>(&private_key)?;
         Ok((private_key, fulcio.request_cert_v2(cert_req, token).await?))
     }
 
@@ -115,8 +120,8 @@ impl<'ctx> SigningSession<'ctx> {
         let not_after = self
             .certs
             .cert
-            .tbs_certificate
-            .validity
+            .tbs_certificate()
+            .validity()
             .not_after
             .to_system_time();
 
@@ -132,7 +137,8 @@ impl<'ctx> SigningSession<'ctx> {
 
         // Sign artifact.
         let input_hash: &[u8] = &hasher.clone().finalize();
-        let artifact_signature: p256::ecdsa::Signature = self.private_key.sign_digest(hasher);
+        let artifact_signature: p256::ecdsa::Signature =
+            self.private_key.sign_prehash(input_hash)?;
         let signature_bytes = artifact_signature.to_der().as_bytes().to_owned();
 
         let cert = &self.certs.cert;
@@ -187,9 +193,9 @@ impl<'ctx> SigningSession<'ctx> {
 
         let mut sync_input = SyncIoBridge::new(input);
         let hasher = tokio::task::spawn_blocking(move || -> SigstoreResult<_> {
-            let mut hasher = Sha256::new();
+            let mut hasher = IoWrapper(Sha256::new());
             io::copy(&mut sync_input, &mut hasher)?;
-            Ok(hasher)
+            Ok(hasher.0)
         })
         .await??;
 
@@ -232,9 +238,9 @@ pub mod blocking {
         /// Signs for the input with the session's identity. If the identity is expired,
         /// [`SigstoreError::ExpiredSigningSession`] is returned.
         pub fn sign<R: Read>(&self, mut input: R) -> SigstoreResult<SigningArtifact> {
-            let mut hasher = Sha256::new();
+            let mut hasher = IoWrapper(Sha256::new());
             io::copy(&mut input, &mut hasher)?;
-            self.rt.block_on(self.inner.sign_digest(hasher))
+            self.rt.block_on(self.inner.sign_digest(hasher.0))
         }
     }
 }
@@ -271,7 +277,7 @@ impl SigningContext {
     }
 
     /// Configures and returns a [`SigningSession`] with the held context.
-    pub async fn signer(&self, identity_token: IdentityToken) -> SigstoreResult<SigningSession> {
+    pub async fn signer(&self, identity_token: IdentityToken) -> SigstoreResult<SigningSession<'_>> {
         SigningSession::new(self, identity_token).await
     }
 
@@ -281,7 +287,7 @@ impl SigningContext {
     pub fn blocking_signer(
         &self,
         identity_token: IdentityToken,
-    ) -> SigstoreResult<blocking::SigningSession> {
+    ) -> SigstoreResult<blocking::SigningSession<'_>> {
         blocking::SigningSession::new(self, identity_token)
     }
 }

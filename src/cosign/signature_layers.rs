@@ -210,7 +210,7 @@ impl SignatureLayer {
         let simple_signing = SimpleSigning::new(image_ref, manifest_digest);
 
         let payload = serde_json::to_vec(&simple_signing)?;
-        let digest = format!("sha256:{:x}", sha2::Sha256::digest(&payload));
+        let digest = format!("sha256:{}", hex::encode(sha2::Sha256::digest(&payload)));
         Ok(SignatureLayer {
             simple_signing,
             oci_digest: digest,
@@ -439,7 +439,10 @@ impl CertificateSignature {
         fulcio_cert_pool.verify_pem_cert(
             cert_pem,
             Some(rustls_pki_types::UnixTime::since_unix_epoch(
-                cert.tbs_certificate.validity.not_before.to_unix_duration(),
+                cert.tbs_certificate()
+                    .validity()
+                    .not_before
+                    .to_unix_duration(),
             )),
         )?;
 
@@ -447,7 +450,7 @@ impl CertificateSignature {
 
         let subject = CertificateSubject::from_certificate(&cert)?;
         let verification_key =
-            CosignVerificationKey::try_from(&cert.tbs_certificate.subject_public_key_info)
+            CosignVerificationKey::try_from(cert.tbs_certificate().subject_public_key_info())
                 .map_err(|e| {
                     SigstoreError::X509Error(format!(
                         "cannot extract public key from certificate: {e}"
@@ -504,16 +507,15 @@ fn get_cert_extension_by_oid(
     ext_oid: ObjectIdentifier,
     ext_oid_name: &str,
 ) -> Result<Option<String>> {
-    cert.tbs_certificate
-        .extensions
-        .as_ref()
+    cert.tbs_certificate()
+        .extensions()
         .ok_or(SigstoreError::X509Error(
             "Certificate's extension is empty".to_string(),
         ))?
         .iter()
         .find(|ext| ext.extn_id == ext_oid)
         .map(|ext| {
-            String::from_utf8(ext.extn_value.clone().into_bytes()).map_err(|_| {
+            String::from_utf8(ext.extn_value.as_bytes().to_vec()).map_err(|_| {
                 SigstoreError::X509Error(format!(
                     "Certificate's extension Sigstore {ext_oid_name} is not UTF8 compatible"
                 ))
@@ -525,8 +527,8 @@ fn get_cert_extension_by_oid(
 impl CertificateSubject {
     pub fn from_certificate(certificate: &Certificate) -> Result<CertificateSubject> {
         let (_, san) = certificate
-            .tbs_certificate
-            .get::<SubjectAltName>()
+            .tbs_certificate()
+            .get_extension::<SubjectAltName>()
             .map_err(|e| SigstoreError::PKCS8Error(format!("get SAN ext failed: {e}")))?
             .ok_or(SigstoreError::PKCS8Error("No SAN ext found".to_string()))?;
 

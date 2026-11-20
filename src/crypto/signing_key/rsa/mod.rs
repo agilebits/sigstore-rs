@@ -52,7 +52,7 @@
 
 use ::rsa::{
     pkcs1v15::SigningKey,
-    pss::BlindedSigningKey,
+    pss,
     signature::{Keypair, RandomizedSigner, SignatureEncoding},
 };
 
@@ -95,9 +95,9 @@ pub enum PaddingScheme {
 #[derive(Debug)]
 #[allow(non_camel_case_types)]
 pub enum RSASigner {
-    RSA_PSS_SHA256(BlindedSigningKey<sha2::Sha256>, RSAKeys),
-    RSA_PSS_SHA384(BlindedSigningKey<sha2::Sha384>, RSAKeys),
-    RSA_PSS_SHA512(BlindedSigningKey<sha2::Sha512>, RSAKeys),
+    RSA_PSS_SHA256(pss::SigningKey<sha2::Sha256>, RSAKeys),
+    RSA_PSS_SHA384(pss::SigningKey<sha2::Sha384>, RSAKeys),
+    RSA_PSS_SHA512(pss::SigningKey<sha2::Sha512>, RSAKeys),
     RSA_PKCS1_SHA256(SigningKey<sha2::Sha256>, RSAKeys),
     RSA_PKCS1_SHA384(SigningKey<sha2::Sha384>, RSAKeys),
     RSA_PKCS1_SHA512(SigningKey<sha2::Sha512>, RSAKeys),
@@ -127,15 +127,15 @@ impl RSASigner {
         match padding_scheme {
             PaddingScheme::PSS => match digest_algorithm {
                 DigestAlgorithm::Sha256 => RSASigner::RSA_PSS_SHA256(
-                    BlindedSigningKey::<sha2::Sha256>::new(private_key),
+                    pss::SigningKey::<sha2::Sha256>::new(private_key),
                     rsa_keys.clone(),
                 ),
                 DigestAlgorithm::Sha384 => RSASigner::RSA_PSS_SHA384(
-                    BlindedSigningKey::<sha2::Sha384>::new(private_key),
+                    pss::SigningKey::<sha2::Sha384>::new(private_key),
                     rsa_keys.clone(),
                 ),
                 DigestAlgorithm::Sha512 => RSASigner::RSA_PSS_SHA512(
-                    BlindedSigningKey::<sha2::Sha512>::new(private_key),
+                    pss::SigningKey::<sha2::Sha512>::new(private_key),
                     rsa_keys.clone(),
                 ),
             },
@@ -189,7 +189,7 @@ impl RSASigner {
 impl Signer for RSASigner {
     /// `sign` will sign the given data, and return the signature.
     fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         Ok(iter_on_rsa!(
             RSASigner,
             self,

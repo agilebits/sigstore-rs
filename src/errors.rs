@@ -226,6 +226,9 @@ pub enum SigstoreError {
     ECError(#[from] elliptic_curve::Error),
 
     #[error(transparent)]
+    ECDecodeError(#[from] elliptic_curve::DecodeError),
+
+    #[error(transparent)]
     ScryptKDFInvalidParamsError(#[from] scrypt::errors::InvalidParams),
 
     #[error(transparent)]

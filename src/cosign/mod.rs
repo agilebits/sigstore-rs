@@ -166,8 +166,8 @@ pub trait CosignCapabilities {
         let cert = Certificate::from_der(pem.contents()).map_err(|e| {
             SigstoreError::PKCS8SpkiError(format!("parse der into cert failed: {e}"))
         })?;
-        let spki = cert.tbs_certificate.subject_public_key_info;
-        let ver_key = CosignVerificationKey::try_from(&spki)?;
+        let spki = cert.tbs_certificate().subject_public_key_info();
+        let ver_key = CosignVerificationKey::try_from(spki)?;
         let signature = Signature::Base64Encoded(signature.as_bytes());
         ver_key.verify_signature(signature, blob)?;
         Ok(())

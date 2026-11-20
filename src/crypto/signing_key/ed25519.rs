@@ -86,7 +86,7 @@ impl Ed25519Keys {
     /// The private key will be randomly
     /// generated.
     pub fn new() -> Result<Self> {
-        let mut csprng = rand::rngs::OsRng {};
+        let mut csprng = rand::rand_core::UnwrapErr(rand::rngs::SysRng);
         let signing_key = SigningKey::generate(&mut csprng);
         let verifying_key = signing_key.verifying_key();
         Ok(Self {
@@ -110,7 +110,7 @@ impl Ed25519Keys {
             COSIGN_PRIVATE_KEY_PEM_LABEL | SIGSTORE_PRIVATE_KEY_PEM_LABEL => {
                 let der = kdf::decrypt(key.contents(), password)?;
                 let pkcs8 =
-                    ed25519_dalek::pkcs8::PrivateKeyInfo::try_from(&der[..]).map_err(|e| {
+                    pkcs8::PrivateKeyInfoRef::try_from(&der[..]).map_err(|e| {
                         SigstoreError::PKCS8Error(format!("Read PrivateKeyInfo failed: {e}"))
                     })?;
                 let key_pair_bytes = KeypairBytes::try_from(pkcs8).map_err(|e| {
@@ -135,7 +135,7 @@ impl Ed25519Keys {
 
         match label {
             PRIVATE_KEY_PEM_LABEL => {
-                let pkcs8 = ed25519_dalek::pkcs8::PrivateKeyInfo::try_from(document.as_bytes())
+                let pkcs8 = pkcs8::PrivateKeyInfoRef::try_from(document.as_bytes())
                     .map_err(|e| {
                         SigstoreError::PKCS8Error(format!("Read PrivateKeyInfo failed: {e}"))
                     })?;
