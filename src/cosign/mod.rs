@@ -335,8 +335,8 @@ TNMea7Ix/stJ5TfcLLeABLE4BNJOsQ4vnBHJ
     #[cfg(feature = "test-registry")]
     const SIGNED_IMAGE: &str = "busybox:1.34";
 
-    pub(crate) fn get_fulcio_cert_pool() -> CertificatePool {
-        fn pem_to_der<'a>(input: &'a str) -> CertificateDer<'a> {
+    pub(crate) fn get_fulcio_cert_pool<'a>() -> CertificatePool<'a> {
+        fn pem_to_der(input: &str) -> CertificateDer {
             let pem_cert = pem::parse(input).unwrap();
             assert_eq!(pem_cert.tag(), "CERTIFICATE");
             CertificateDer::from(pem_cert.into_contents())

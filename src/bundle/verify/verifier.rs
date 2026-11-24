@@ -54,9 +54,9 @@ impl<'a, T> Verifier<'a, T> {
     /// For verifications against the public-good trust root, use [`Verifier::production()`].
     pub fn new<R: TrustRoot>(online_verifier: T, trust_repo: R) -> SigstoreResult<Self> {
         let cert_pool = CertificatePool::from_certificates(trust_repo.fulcio_certs()?, [])?;
-        let rekor_key_bytes = trust_repo.rekor_keys().unwrap()[0];
+        let rekor_key_bytes = trust_repo.rekor_keys().expect("valid rekor keys")[0];
         let rekor_key =
-            CosignVerificationKey::from_pem(rekor_key_bytes, &SigningScheme::default()).unwrap();
+            CosignVerificationKey::from_pem(rekor_key_bytes, &SigningScheme::default()).expect("valid rekor key");
 
         Ok(Self {
             online_verifier,

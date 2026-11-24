@@ -139,11 +139,11 @@ impl CheckpointNote {
     }
 }
 
-impl ToString for Checkpoint {
-    fn to_string(&self) -> String {
+impl Display for Checkpoint {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let note = self.note.marshal();
         let signature = self.signature.to_string();
-        format!("{note}\n{signature}")
+        write!(f, "{note}\n{signature}")
     }
 }
 
@@ -195,11 +195,11 @@ impl<'de> Deserialize<'de> for Checkpoint {
     }
 }
 
-impl ToString for CheckpointSignature {
-    fn to_string(&self) -> String {
+impl Display for CheckpointSignature {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let sig_b64 =
             BASE64_STANDARD.encode([self.key_fingerprint.as_slice(), self.raw.as_slice()].concat());
-        format!("— {} {sig_b64}\n", self.name)
+        writeln!(f, "— {} {sig_b64}", self.name)
     }
 }
 

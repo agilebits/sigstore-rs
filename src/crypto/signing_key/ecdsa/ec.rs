@@ -26,6 +26,7 @@
 //! The [`ECDSAKeys`] has two enums due to their underlying elliptic curves, s.t.
 //! * `P256`
 //! * `P384`
+//!
 //! To have an uniform interface for all kinds of asymmetric keys, [`ECDSAKeys`]
 //! is also wrapped in [`super::super::SigStoreKeyPair`] enum.
 //!
