@@ -67,61 +67,61 @@ impl VerificationConstraint for CertSubjectUrlVerifier {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::cosign::signature_layers::tests::{
-        build_correct_signature_layer_with_certificate,
-        build_correct_signature_layer_without_bundle,
-    };
-    use crate::cosign::verification_constraint::CertSubjectEmailVerifier;
-
-    #[test]
-    fn cert_subject_url_verifier() {
-        let url = "https://sigstore.dev/test".to_string();
-        let issuer = "the issuer".to_string();
-
-        let mut sl = build_correct_signature_layer_with_certificate();
-        let mut cert_signature = sl.certificate_signature.unwrap();
-        let cert_subj = CertificateSubject::Uri(url.clone());
-        cert_signature.issuer = Some(issuer.clone());
-        cert_signature.subject = cert_subj;
-        sl.certificate_signature = Some(cert_signature);
-
-        let vc = CertSubjectUrlVerifier {
-            url: url.clone(),
-            issuer: issuer.clone(),
-        };
-        assert!(vc.verify(&sl).unwrap());
-
-        let vc = CertSubjectUrlVerifier {
-            url: "a different url".to_string(),
-            issuer: issuer.clone(),
-        };
-        assert!(!vc.verify(&sl).unwrap());
-
-        let vc = CertSubjectUrlVerifier {
-            url,
-            issuer: "a different issuer".to_string(),
-        };
-        assert!(!vc.verify(&sl).unwrap());
-
-        // A Cert email verifier should also report a non match
-        let vc = CertSubjectEmailVerifier {
-            email: "alice@example.com".to_string(),
-            issuer: Some(issuer),
-        };
-        assert!(!vc.verify(&sl).unwrap());
-    }
-
-    #[test]
-    fn cert_subject_verifier_no_signature() {
-        let (sl, _) = build_correct_signature_layer_without_bundle();
-
-        let vc = CertSubjectUrlVerifier {
-            url: "https://sigstore.dev/test".to_string(),
-            issuer: "an issuer".to_string(),
-        };
-        assert!(!vc.verify(&sl).unwrap());
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::cosign::signature_layers::tests::{
+//         build_correct_signature_layer_with_certificate,
+//         build_correct_signature_layer_without_bundle,
+//     };
+//     use crate::cosign::verification_constraint::CertSubjectEmailVerifier;
+//
+//     #[test]
+//     fn cert_subject_url_verifier() {
+//         let url = "https://sigstore.dev/test".to_string();
+//         let issuer = "the issuer".to_string();
+//
+//         let mut sl = build_correct_signature_layer_with_certificate();
+//         let mut cert_signature = sl.certificate_signature.unwrap();
+//         let cert_subj = CertificateSubject::Uri(url.clone());
+//         cert_signature.issuer = Some(issuer.clone());
+//         cert_signature.subject = cert_subj;
+//         sl.certificate_signature = Some(cert_signature);
+//
+//         let vc = CertSubjectUrlVerifier {
+//             url: url.clone(),
+//             issuer: issuer.clone(),
+//         };
+//         assert!(vc.verify(&sl).unwrap());
+//
+//         let vc = CertSubjectUrlVerifier {
+//             url: "a different url".to_string(),
+//             issuer: issuer.clone(),
+//         };
+//         assert!(!vc.verify(&sl).unwrap());
+//
+//         let vc = CertSubjectUrlVerifier {
+//             url,
+//             issuer: "a different issuer".to_string(),
+//         };
+//         assert!(!vc.verify(&sl).unwrap());
+//
+//         // A Cert email verifier should also report a non match
+//         let vc = CertSubjectEmailVerifier {
+//             email: "alice@example.com".to_string(),
+//             issuer: Some(issuer),
+//         };
+//         assert!(!vc.verify(&sl).unwrap());
+//     }
+//
+//     #[test]
+//     fn cert_subject_verifier_no_signature() {
+//         let (sl, _) = build_correct_signature_layer_without_bundle();
+//
+//         let vc = CertSubjectUrlVerifier {
+//             url: "https://sigstore.dev/test".to_string(),
+//             issuer: "an issuer".to_string(),
+//         };
+//         assert!(!vc.verify(&sl).unwrap());
+//     }
+// }

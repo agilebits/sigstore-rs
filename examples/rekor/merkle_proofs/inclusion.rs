@@ -8,7 +8,7 @@ use std::path::PathBuf;
 #[derive(Parser)]
 struct Args {
     #[arg(long, value_name = "INDEX")]
-    log_index: usize,
+    log_index: i64,
     #[arg(long, value_name = "REKOR PUBLIC KEY")]
     rekor_key: PathBuf,
 }
@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // fetch entry from log
     let rekor_config = Configuration::default();
-    let log_entry = get_log_entry_by_index(&rekor_config, args.log_index as i32).await?;
+    let log_entry = get_log_entry_by_index(&rekor_config, args.log_index).await?;
 
     // verify inclusion with key
     log_entry

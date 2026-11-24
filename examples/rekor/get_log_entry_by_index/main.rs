@@ -39,7 +39,7 @@ async fn main() {
     const LOG_INDEX: &str = "1";
 
     let flags = matches.get_matches();
-    let index = i32::from_str(
+    let index = i64::from_str(
         flags
             .get_one::<String>("log_index")
             .unwrap_or(&LOG_INDEX.to_string()),

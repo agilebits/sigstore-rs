@@ -180,7 +180,7 @@
 //!     );
 //!
 //!     let flags = matches.get_matches();
-//!     let index = <i32 as FromStr>::from_str(
+//!     let index = <i64 as FromStr>::from_str(
 //!         flags.get_one::<String>("log_index")
 //!         .unwrap_or(&"1".to_string())
 //!     ).unwrap();

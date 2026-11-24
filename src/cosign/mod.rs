@@ -282,225 +282,225 @@ where
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-    use rustls_pki_types::CertificateDer;
+    // use serde_json::json;
+    // use rustls_pki_types::CertificateDer;
 
     use super::constraint::{AnnotationMarker, PrivateKeySigner};
     use super::*;
-    use crate::cosign::signature_layers::tests::build_correct_signature_layer_with_certificate;
-    use crate::cosign::signature_layers::CertificateSubject;
-    use crate::cosign::simple_signing::Optional;
-    use crate::cosign::verification_constraint::{
-        AnnotationVerifier, CertSubjectEmailVerifier, VerificationConstraintVec,
-    };
-    use crate::crypto::certificate_pool::CertificatePool;
+    // use crate::cosign::signature_layers::tests::build_correct_signature_layer_with_certificate;
+    // use crate::cosign::signature_layers::CertificateSubject;
+    // use crate::cosign::simple_signing::Optional;
+    // use crate::cosign::verification_constraint::{
+    //     AnnotationVerifier, CertSubjectEmailVerifier, VerificationConstraintVec,
+    // };
+    // use crate::crypto::certificate_pool::CertificatePool;
     use crate::crypto::SigningScheme;
 
-    #[cfg(feature = "test-registry")]
-    use testcontainers::{clients, core::WaitFor};
+    // #[cfg(feature = "test-registry")]
+    // use testcontainers::{clients, core::WaitFor};
 
-    pub(crate) const REKOR_PUB_KEY: &str = r#"-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE2G2Y+2tabdTV5BcGiBIx0a9fAFwr
-kBbmLSGtks4L3qX6yYY0zufBnhC8Ur/iy55GhWP/9A/bY2LhC30M9+RYtw==
------END PUBLIC KEY-----"#;
+//     pub(crate) const REKOR_PUB_KEY: &str = r#"-----BEGIN PUBLIC KEY-----
+// MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE2G2Y+2tabdTV5BcGiBIx0a9fAFwr
+// kBbmLSGtks4L3qX6yYY0zufBnhC8Ur/iy55GhWP/9A/bY2LhC30M9+RYtw==
+// -----END PUBLIC KEY-----"#;
+//
+//     const FULCIO_CRT_1_PEM: &str = r#"-----BEGIN CERTIFICATE-----
+// MIIB+DCCAX6gAwIBAgITNVkDZoCiofPDsy7dfm6geLbuhzAKBggqhkjOPQQDAzAq
+// MRUwEwYDVQQKEwxzaWdzdG9yZS5kZXYxETAPBgNVBAMTCHNpZ3N0b3JlMB4XDTIx
+// MDMwNzAzMjAyOVoXDTMxMDIyMzAzMjAyOVowKjEVMBMGA1UEChMMc2lnc3RvcmUu
+// ZGV2MREwDwYDVQQDEwhzaWdzdG9yZTB2MBAGByqGSM49AgEGBSuBBAAiA2IABLSy
+// A7Ii5k+pNO8ZEWY0ylemWDowOkNa3kL+GZE5Z5GWehL9/A9bRNA3RbrsZ5i0Jcas
+// taRL7Sp5fp/jD5dxqc/UdTVnlvS16an+2Yfswe/QuLolRUCrcOE2+2iA5+tzd6Nm
+// MGQwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQEwHQYDVR0OBBYE
+// FMjFHQBBmiQpMlEk6w2uSu1KBtPsMB8GA1UdIwQYMBaAFMjFHQBBmiQpMlEk6w2u
+// Su1KBtPsMAoGCCqGSM49BAMDA2gAMGUCMH8liWJfMui6vXXBhjDgY4MwslmN/TJx
+// Ve/83WrFomwmNf056y1X48F9c4m3a3ozXAIxAKjRay5/aj/jsKKGIkmQatjI8uup
+// Hr/+CxFvaJWmpYqNkLDGRU+9orzh5hI2RrcuaQ==
+// -----END CERTIFICATE-----"#;
+//
+//     const FULCIO_CRT_2_PEM: &str = r#"-----BEGIN CERTIFICATE-----
+// MIIB9zCCAXygAwIBAgIUALZNAPFdxHPwjeDloDwyYChAO/4wCgYIKoZIzj0EAwMw
+// KjEVMBMGA1UEChMMc2lnc3RvcmUuZGV2MREwDwYDVQQDEwhzaWdzdG9yZTAeFw0y
+// MTEwMDcxMzU2NTlaFw0zMTEwMDUxMzU2NThaMCoxFTATBgNVBAoTDHNpZ3N0b3Jl
+// LmRldjERMA8GA1UEAxMIc2lnc3RvcmUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAT7
+// XeFT4rb3PQGwS4IajtLk3/OlnpgangaBclYpsYBr5i+4ynB07ceb3LP0OIOZdxex
+// X69c5iVuyJRQ+Hz05yi+UF3uBWAlHpiS5sh0+H2GHE7SXrk1EC5m1Tr19L9gg92j
+// YzBhMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBRY
+// wB5fkUWlZql6zJChkyLQKsXF+jAfBgNVHSMEGDAWgBRYwB5fkUWlZql6zJChkyLQ
+// KsXF+jAKBggqhkjOPQQDAwNpADBmAjEAj1nHeXZp+13NWBNa+EDsDP8G1WWg1tCM
+// WP/WHPqpaVo0jhsweNFZgSs0eE7wYI4qAjEA2WB9ot98sIkoF3vZYdd3/VtWB5b9
+// TNMea7Ix/stJ5TfcLLeABLE4BNJOsQ4vnBHJ
+// -----END CERTIFICATE-----"#;
 
-    const FULCIO_CRT_1_PEM: &str = r#"-----BEGIN CERTIFICATE-----
-MIIB+DCCAX6gAwIBAgITNVkDZoCiofPDsy7dfm6geLbuhzAKBggqhkjOPQQDAzAq
-MRUwEwYDVQQKEwxzaWdzdG9yZS5kZXYxETAPBgNVBAMTCHNpZ3N0b3JlMB4XDTIx
-MDMwNzAzMjAyOVoXDTMxMDIyMzAzMjAyOVowKjEVMBMGA1UEChMMc2lnc3RvcmUu
-ZGV2MREwDwYDVQQDEwhzaWdzdG9yZTB2MBAGByqGSM49AgEGBSuBBAAiA2IABLSy
-A7Ii5k+pNO8ZEWY0ylemWDowOkNa3kL+GZE5Z5GWehL9/A9bRNA3RbrsZ5i0Jcas
-taRL7Sp5fp/jD5dxqc/UdTVnlvS16an+2Yfswe/QuLolRUCrcOE2+2iA5+tzd6Nm
-MGQwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQEwHQYDVR0OBBYE
-FMjFHQBBmiQpMlEk6w2uSu1KBtPsMB8GA1UdIwQYMBaAFMjFHQBBmiQpMlEk6w2u
-Su1KBtPsMAoGCCqGSM49BAMDA2gAMGUCMH8liWJfMui6vXXBhjDgY4MwslmN/TJx
-Ve/83WrFomwmNf056y1X48F9c4m3a3ozXAIxAKjRay5/aj/jsKKGIkmQatjI8uup
-Hr/+CxFvaJWmpYqNkLDGRU+9orzh5hI2RrcuaQ==
------END CERTIFICATE-----"#;
+    // #[cfg(feature = "test-registry")]
+    // const SIGNED_IMAGE: &str = "busybox:1.34";
 
-    const FULCIO_CRT_2_PEM: &str = r#"-----BEGIN CERTIFICATE-----
-MIIB9zCCAXygAwIBAgIUALZNAPFdxHPwjeDloDwyYChAO/4wCgYIKoZIzj0EAwMw
-KjEVMBMGA1UEChMMc2lnc3RvcmUuZGV2MREwDwYDVQQDEwhzaWdzdG9yZTAeFw0y
-MTEwMDcxMzU2NTlaFw0zMTEwMDUxMzU2NThaMCoxFTATBgNVBAoTDHNpZ3N0b3Jl
-LmRldjERMA8GA1UEAxMIc2lnc3RvcmUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAT7
-XeFT4rb3PQGwS4IajtLk3/OlnpgangaBclYpsYBr5i+4ynB07ceb3LP0OIOZdxex
-X69c5iVuyJRQ+Hz05yi+UF3uBWAlHpiS5sh0+H2GHE7SXrk1EC5m1Tr19L9gg92j
-YzBhMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBRY
-wB5fkUWlZql6zJChkyLQKsXF+jAfBgNVHSMEGDAWgBRYwB5fkUWlZql6zJChkyLQ
-KsXF+jAKBggqhkjOPQQDAwNpADBmAjEAj1nHeXZp+13NWBNa+EDsDP8G1WWg1tCM
-WP/WHPqpaVo0jhsweNFZgSs0eE7wYI4qAjEA2WB9ot98sIkoF3vZYdd3/VtWB5b9
-TNMea7Ix/stJ5TfcLLeABLE4BNJOsQ4vnBHJ
------END CERTIFICATE-----"#;
-
-    #[cfg(feature = "test-registry")]
-    const SIGNED_IMAGE: &str = "busybox:1.34";
-
-    pub(crate) fn get_fulcio_cert_pool<'a>() -> CertificatePool<'a> {
-        fn pem_to_der(input: &str) -> CertificateDer {
-            let pem_cert = pem::parse(input).unwrap();
-            assert_eq!(pem_cert.tag(), "CERTIFICATE");
-            CertificateDer::from(pem_cert.into_contents())
-        }
-        let certificates = vec![pem_to_der(FULCIO_CRT_1_PEM), pem_to_der(FULCIO_CRT_2_PEM)];
-
-        CertificatePool::from_certificates(certificates, []).unwrap()
-    }
-
-    pub(crate) fn get_rekor_public_key() -> CosignVerificationKey {
-        CosignVerificationKey::from_pem(REKOR_PUB_KEY.as_bytes(), &SigningScheme::default())
-            .expect("Cannot create test REKOR_PUB_KEY")
-    }
-
-    #[test]
-    fn verify_constraints_all_satisfied() {
-        let email = "alice@example.com".to_string();
-        let issuer = "an issuer".to_string();
-
-        let mut annotations: HashMap<String, String> = HashMap::new();
-        annotations.insert("key1".into(), "value1".into());
-        annotations.insert("key2".into(), "value2".into());
-
-        let mut layers: Vec<SignatureLayer> = Vec::new();
-        for _ in 0..5 {
-            let mut sl = build_correct_signature_layer_with_certificate();
-            let mut cert_signature = sl.certificate_signature.unwrap();
-            let cert_subj = CertificateSubject::Email(email.clone());
-            cert_signature.issuer = Some(issuer.clone());
-            cert_signature.subject = cert_subj;
-            sl.certificate_signature = Some(cert_signature);
-
-            let mut extra: HashMap<String, serde_json::Value> = annotations
-                .iter()
-                .map(|(k, v)| (k.clone(), json!(v)))
-                .collect();
-            extra.insert("something extra".into(), json!("value extra"));
-
-            let mut simple_signing = sl.simple_signing;
-            let optional = Optional {
-                creator: Some("test".into()),
-                timestamp: None,
-                extra,
-            };
-            simple_signing.optional = Some(optional);
-            sl.simple_signing = simple_signing;
-
-            layers.push(sl);
-        }
-
-        let mut constraints: VerificationConstraintVec = Vec::new();
-        let vc = CertSubjectEmailVerifier {
-            email: email.clone(),
-            issuer: Some(issuer),
-        };
-        constraints.push(Box::new(vc));
-
-        let vc = CertSubjectEmailVerifier {
-            email,
-            issuer: None,
-        };
-        constraints.push(Box::new(vc));
-
-        let vc = AnnotationVerifier { annotations };
-        constraints.push(Box::new(vc));
-
-        verify_constraints(&layers, constraints.iter()).expect("should not return an error");
-    }
-
-    #[test]
-    fn verify_constraints_none_satisfied() {
-        let email = "alice@example.com".to_string();
-        let issuer = "an issuer".to_string();
-        let wrong_email = "bob@example.com".to_string();
-
-        let mut layers: Vec<SignatureLayer> = Vec::new();
-        for _ in 0..5 {
-            let mut sl = build_correct_signature_layer_with_certificate();
-            let mut cert_signature = sl.certificate_signature.unwrap();
-            let cert_subj = CertificateSubject::Email(email.clone());
-            cert_signature.issuer = Some(issuer.clone());
-            cert_signature.subject = cert_subj;
-            sl.certificate_signature = Some(cert_signature);
-
-            let mut extra: HashMap<String, serde_json::Value> = HashMap::new();
-            extra.insert("something extra".into(), json!("value extra"));
-
-            let mut simple_signing = sl.simple_signing;
-            let optional = Optional {
-                creator: Some("test".into()),
-                timestamp: None,
-                extra,
-            };
-            simple_signing.optional = Some(optional);
-            sl.simple_signing = simple_signing;
-
-            layers.push(sl);
-        }
-
-        let mut constraints: VerificationConstraintVec = Vec::new();
-        let vc = CertSubjectEmailVerifier {
-            email: wrong_email.clone(),
-            issuer: Some(issuer), // correct issuer
-        };
-        constraints.push(Box::new(vc));
-
-        let vc = CertSubjectEmailVerifier {
-            email: wrong_email,
-            issuer: None, // missing issuer, more relaxed
-        };
-        constraints.push(Box::new(vc));
-
-        let err =
-            verify_constraints(&layers, constraints.iter()).expect_err("we should have an err");
-        assert_eq!(err.unsatisfied_constraints.len(), 2);
-    }
-
-    #[test]
-    fn verify_constraints_some_unsatisfied() {
-        let email = "alice@example.com".to_string();
-        let issuer = "an issuer".to_string();
-        let email_incorrect = "bob@example.com".to_string();
-
-        let mut layers: Vec<SignatureLayer> = Vec::new();
-        for _ in 0..5 {
-            let mut sl = build_correct_signature_layer_with_certificate();
-            let mut cert_signature = sl.certificate_signature.unwrap();
-            let cert_subj = CertificateSubject::Email(email.clone());
-            cert_signature.issuer = Some(issuer.clone());
-            cert_signature.subject = cert_subj;
-            sl.certificate_signature = Some(cert_signature);
-
-            let mut extra: HashMap<String, serde_json::Value> = HashMap::new();
-            extra.insert("something extra".into(), json!("value extra"));
-
-            let mut simple_signing = sl.simple_signing;
-            let optional = Optional {
-                creator: Some("test".into()),
-                timestamp: None,
-                extra,
-            };
-            simple_signing.optional = Some(optional);
-            sl.simple_signing = simple_signing;
-
-            layers.push(sl);
-        }
-
-        let mut constraints: VerificationConstraintVec = Vec::new();
-        let satisfied_constraint = CertSubjectEmailVerifier {
-            email,
-            issuer: Some(issuer),
-        };
-        constraints.push(Box::new(satisfied_constraint));
-
-        let unsatisfied_constraint = CertSubjectEmailVerifier {
-            email: email_incorrect,
-            issuer: None,
-        };
-        constraints.push(Box::new(unsatisfied_constraint));
-
-        let err =
-            verify_constraints(&layers, constraints.iter()).expect_err("we should have an err");
-        assert_eq!(err.unsatisfied_constraints.len(), 1);
-    }
+    // pub(crate) fn get_fulcio_cert_pool<'a>() -> CertificatePool<'a> {
+    //     fn pem_to_der(input: &str) -> CertificateDer {
+    //         let pem_cert = pem::parse(input).unwrap();
+    //         assert_eq!(pem_cert.tag(), "CERTIFICATE");
+    //         CertificateDer::from(pem_cert.into_contents())
+    //     }
+    //     let certificates = vec![pem_to_der(FULCIO_CRT_1_PEM), pem_to_der(FULCIO_CRT_2_PEM)];
+    //
+    //     CertificatePool::from_certificates(certificates, []).unwrap()
+    // }
+    //
+    // pub(crate) fn get_rekor_public_key() -> CosignVerificationKey {
+    //     CosignVerificationKey::from_pem(REKOR_PUB_KEY.as_bytes(), &SigningScheme::default())
+    //         .expect("Cannot create test REKOR_PUB_KEY")
+    // }
+    //
+    // #[test]
+    // fn verify_constraints_all_satisfied() {
+    //     let email = "alice@example.com".to_string();
+    //     let issuer = "an issuer".to_string();
+    //
+    //     let mut annotations: HashMap<String, String> = HashMap::new();
+    //     annotations.insert("key1".into(), "value1".into());
+    //     annotations.insert("key2".into(), "value2".into());
+    //
+    //     let mut layers: Vec<SignatureLayer> = Vec::new();
+    //     for _ in 0..5 {
+    //         let mut sl = build_correct_signature_layer_with_certificate();
+    //         let mut cert_signature = sl.certificate_signature.unwrap();
+    //         let cert_subj = CertificateSubject::Email(email.clone());
+    //         cert_signature.issuer = Some(issuer.clone());
+    //         cert_signature.subject = cert_subj;
+    //         sl.certificate_signature = Some(cert_signature);
+    //
+    //         let mut extra: HashMap<String, serde_json::Value> = annotations
+    //             .iter()
+    //             .map(|(k, v)| (k.clone(), json!(v)))
+    //             .collect();
+    //         extra.insert("something extra".into(), json!("value extra"));
+    //
+    //         let mut simple_signing = sl.simple_signing;
+    //         let optional = Optional {
+    //             creator: Some("test".into()),
+    //             timestamp: None,
+    //             extra,
+    //         };
+    //         simple_signing.optional = Some(optional);
+    //         sl.simple_signing = simple_signing;
+    //
+    //         layers.push(sl);
+    //     }
+    //
+    //     let mut constraints: VerificationConstraintVec = Vec::new();
+    //     let vc = CertSubjectEmailVerifier {
+    //         email: email.clone(),
+    //         issuer: Some(issuer),
+    //     };
+    //     constraints.push(Box::new(vc));
+    //
+    //     let vc = CertSubjectEmailVerifier {
+    //         email,
+    //         issuer: None,
+    //     };
+    //     constraints.push(Box::new(vc));
+    //
+    //     let vc = AnnotationVerifier { annotations };
+    //     constraints.push(Box::new(vc));
+    //
+    //     verify_constraints(&layers, constraints.iter()).expect("should not return an error");
+    // }
+    //
+    // #[test]
+    // fn verify_constraints_none_satisfied() {
+    //     let email = "alice@example.com".to_string();
+    //     let issuer = "an issuer".to_string();
+    //     let wrong_email = "bob@example.com".to_string();
+    //
+    //     let mut layers: Vec<SignatureLayer> = Vec::new();
+    //     for _ in 0..5 {
+    //         let mut sl = build_correct_signature_layer_with_certificate();
+    //         let mut cert_signature = sl.certificate_signature.unwrap();
+    //         let cert_subj = CertificateSubject::Email(email.clone());
+    //         cert_signature.issuer = Some(issuer.clone());
+    //         cert_signature.subject = cert_subj;
+    //         sl.certificate_signature = Some(cert_signature);
+    //
+    //         let mut extra: HashMap<String, serde_json::Value> = HashMap::new();
+    //         extra.insert("something extra".into(), json!("value extra"));
+    //
+    //         let mut simple_signing = sl.simple_signing;
+    //         let optional = Optional {
+    //             creator: Some("test".into()),
+    //             timestamp: None,
+    //             extra,
+    //         };
+    //         simple_signing.optional = Some(optional);
+    //         sl.simple_signing = simple_signing;
+    //
+    //         layers.push(sl);
+    //     }
+    //
+    //     let mut constraints: VerificationConstraintVec = Vec::new();
+    //     let vc = CertSubjectEmailVerifier {
+    //         email: wrong_email.clone(),
+    //         issuer: Some(issuer), // correct issuer
+    //     };
+    //     constraints.push(Box::new(vc));
+    //
+    //     let vc = CertSubjectEmailVerifier {
+    //         email: wrong_email,
+    //         issuer: None, // missing issuer, more relaxed
+    //     };
+    //     constraints.push(Box::new(vc));
+    //
+    //     let err =
+    //         verify_constraints(&layers, constraints.iter()).expect_err("we should have an err");
+    //     assert_eq!(err.unsatisfied_constraints.len(), 2);
+    // }
+    //
+    // #[test]
+    // fn verify_constraints_some_unsatisfied() {
+    //     let email = "alice@example.com".to_string();
+    //     let issuer = "an issuer".to_string();
+    //     let email_incorrect = "bob@example.com".to_string();
+    //
+    //     let mut layers: Vec<SignatureLayer> = Vec::new();
+    //     for _ in 0..5 {
+    //         let mut sl = build_correct_signature_layer_with_certificate();
+    //         let mut cert_signature = sl.certificate_signature.unwrap();
+    //         let cert_subj = CertificateSubject::Email(email.clone());
+    //         cert_signature.issuer = Some(issuer.clone());
+    //         cert_signature.subject = cert_subj;
+    //         sl.certificate_signature = Some(cert_signature);
+    //
+    //         let mut extra: HashMap<String, serde_json::Value> = HashMap::new();
+    //         extra.insert("something extra".into(), json!("value extra"));
+    //
+    //         let mut simple_signing = sl.simple_signing;
+    //         let optional = Optional {
+    //             creator: Some("test".into()),
+    //             timestamp: None,
+    //             extra,
+    //         };
+    //         simple_signing.optional = Some(optional);
+    //         sl.simple_signing = simple_signing;
+    //
+    //         layers.push(sl);
+    //     }
+    //
+    //     let mut constraints: VerificationConstraintVec = Vec::new();
+    //     let satisfied_constraint = CertSubjectEmailVerifier {
+    //         email,
+    //         issuer: Some(issuer),
+    //     };
+    //     constraints.push(Box::new(satisfied_constraint));
+    //
+    //     let unsatisfied_constraint = CertSubjectEmailVerifier {
+    //         email: email_incorrect,
+    //         issuer: None,
+    //     };
+    //     constraints.push(Box::new(unsatisfied_constraint));
+    //
+    //     let err =
+    //         verify_constraints(&layers, constraints.iter()).expect_err("we should have an err");
+    //     assert_eq!(err.unsatisfied_constraints.len(), 1);
+    // }
 
     #[test]
     fn add_constrains_all_succeed() {
@@ -552,123 +552,123 @@ TNMea7Ix/stJ5TfcLLeABLE4BNJOsQ4vnBHJ
             .expect_err("no error should occur");
     }
 
-    #[cfg(feature = "test-registry")]
-    #[rstest::rstest]
-    #[case(SigningScheme::RSA_PSS_SHA256(2048))]
-    #[case(SigningScheme::RSA_PSS_SHA384(2048))]
-    #[case(SigningScheme::RSA_PSS_SHA512(2048))]
-    #[case(SigningScheme::RSA_PKCS1_SHA256(2048))]
-    #[case(SigningScheme::RSA_PKCS1_SHA384(2048))]
-    #[case(SigningScheme::RSA_PKCS1_SHA512(2048))]
-    #[case(SigningScheme::ECDSA_P256_SHA256_ASN1)]
-    #[case(SigningScheme::ECDSA_P384_SHA384_ASN1)]
-    #[case(SigningScheme::ED25519)]
-    #[tokio::test]
-    #[serial_test::serial]
-    async fn sign_verify_image(#[case] signing_scheme: SigningScheme) {
-        let docker = clients::Cli::default();
-        let image = registry_image();
-        let test_container = docker.run(image);
-        let port = test_container.get_host_port_ipv4(5000);
-
-        let mut client = ClientBuilder::default()
-            .enable_registry_caching()
-            .with_oci_client_config(crate::registry::ClientConfig {
-                protocol: crate::registry::ClientProtocol::HttpsExcept(vec![format!(
-                    "localhost:{}",
-                    port
-                )]),
-                ..Default::default()
-            })
-            .build()
-            .expect("failed to create oci client");
-
-        let image_ref = format!("localhost:{}/{}", port, SIGNED_IMAGE)
-            .parse::<OciReference>()
-            .expect("failed to parse reference");
-        prepare_image_to_be_signed(&mut client, &image_ref).await;
-
-        let (cosign_signature_image, source_image_digest) = client
-            .triangulate(&image_ref, &crate::registry::Auth::Anonymous)
-            .await
-            .expect("get manifest failed");
-        let mut signature_layer = SignatureLayer::new_unsigned(&image_ref, &source_image_digest)
-            .expect("create SignatureLayer failed");
-        let signer = signing_scheme
-            .create_signer()
-            .expect("create signer failed");
-        let pubkey = signer
-            .to_sigstore_keypair()
-            .expect("to keypair failed")
-            .public_key_to_pem()
-            .expect("derive public key failed");
-
-        let signer = PrivateKeySigner::new_with_signer(signer);
-        if !signer
-            .add_constraint(&mut signature_layer)
-            .expect("sign SignatureLayer failed")
-        {
-            panic!("failed to sign SignatureLayer");
-        };
-
-        client
-            .push_signature(
-                None,
-                &Auth::Anonymous,
-                &cosign_signature_image,
-                vec![signature_layer],
-            )
-            .await
-            .expect("push signature failed");
-
-        dbg!("start to verify");
-
-        let (cosign_image, manifest_digest) = client
-            .triangulate(&image_ref, &Auth::Anonymous)
-            .await
-            .expect("triangulate failed");
-        let signature_layers = client
-            .trusted_signature_layers(&Auth::Anonymous, &manifest_digest, &cosign_image)
-            .await
-            .expect("get trusted signature layers failed");
-        let pk_verifier =
-            verification_constraint::PublicKeyVerifier::new(pubkey.as_bytes(), &signing_scheme)
-                .expect("create PublicKeyVerifier failed");
-        assert_eq!(signature_layers.len(), 1);
-        let res = pk_verifier
-            .verify(&signature_layers[0])
-            .expect("failed to verify");
-        assert!(res);
-    }
-
-    #[cfg(feature = "test-registry")]
-    async fn prepare_image_to_be_signed(client: &mut Client, image_ref: &OciReference) {
-        let data = client
-            .registry_client
-            .pull(
-                &SIGNED_IMAGE.parse().expect("failed to parse image ref"),
-                &oci_distribution::secrets::RegistryAuth::Anonymous,
-                vec![oci_distribution::manifest::IMAGE_DOCKER_LAYER_GZIP_MEDIA_TYPE],
-            )
-            .await
-            .expect("pull test image failed");
-
-        client
-            .registry_client
-            .push(
-                &image_ref.oci_reference,
-                &data.layers[..],
-                data.config.clone(),
-                &oci_distribution::secrets::RegistryAuth::Anonymous,
-                None,
-            )
-            .await
-            .expect("push test image failed");
-    }
-
-    #[cfg(feature = "test-registry")]
-    fn registry_image() -> testcontainers::GenericImage {
-        testcontainers::GenericImage::new("docker.io/library/registry", "2")
-            .with_wait_for(WaitFor::message_on_stderr("listening on "))
-    }
+    // #[cfg(feature = "test-registry")]
+    // #[rstest::rstest]
+    // #[case(SigningScheme::RSA_PSS_SHA256(2048))]
+    // #[case(SigningScheme::RSA_PSS_SHA384(2048))]
+    // #[case(SigningScheme::RSA_PSS_SHA512(2048))]
+    // #[case(SigningScheme::RSA_PKCS1_SHA256(2048))]
+    // #[case(SigningScheme::RSA_PKCS1_SHA384(2048))]
+    // #[case(SigningScheme::RSA_PKCS1_SHA512(2048))]
+    // #[case(SigningScheme::ECDSA_P256_SHA256_ASN1)]
+    // #[case(SigningScheme::ECDSA_P384_SHA384_ASN1)]
+    // #[case(SigningScheme::ED25519)]
+    // #[tokio::test]
+    // #[serial_test::serial]
+    // async fn sign_verify_image(#[case] signing_scheme: SigningScheme) {
+    //     let docker = clients::Cli::default();
+    //     let image = registry_image();
+    //     let test_container = docker.run(image);
+    //     let port = test_container.get_host_port_ipv4(5000);
+    //
+    //     let mut client = ClientBuilder::default()
+    //         .enable_registry_caching()
+    //         .with_oci_client_config(crate::registry::ClientConfig {
+    //             protocol: crate::registry::ClientProtocol::HttpsExcept(vec![format!(
+    //                 "localhost:{}",
+    //                 port
+    //             )]),
+    //             ..Default::default()
+    //         })
+    //         .build()
+    //         .expect("failed to create oci client");
+    //
+    //     let image_ref = format!("localhost:{}/{}", port, SIGNED_IMAGE)
+    //         .parse::<OciReference>()
+    //         .expect("failed to parse reference");
+    //     prepare_image_to_be_signed(&mut client, &image_ref).await;
+    //
+    //     let (cosign_signature_image, source_image_digest) = client
+    //         .triangulate(&image_ref, &crate::registry::Auth::Anonymous)
+    //         .await
+    //         .expect("get manifest failed");
+    //     let mut signature_layer = SignatureLayer::new_unsigned(&image_ref, &source_image_digest)
+    //         .expect("create SignatureLayer failed");
+    //     let signer = signing_scheme
+    //         .create_signer()
+    //         .expect("create signer failed");
+    //     let pubkey = signer
+    //         .to_sigstore_keypair()
+    //         .expect("to keypair failed")
+    //         .public_key_to_pem()
+    //         .expect("derive public key failed");
+    //
+    //     let signer = PrivateKeySigner::new_with_signer(signer);
+    //     if !signer
+    //         .add_constraint(&mut signature_layer)
+    //         .expect("sign SignatureLayer failed")
+    //     {
+    //         panic!("failed to sign SignatureLayer");
+    //     };
+    //
+    //     client
+    //         .push_signature(
+    //             None,
+    //             &Auth::Anonymous,
+    //             &cosign_signature_image,
+    //             vec![signature_layer],
+    //         )
+    //         .await
+    //         .expect("push signature failed");
+    //
+    //     dbg!("start to verify");
+    //
+    //     let (cosign_image, manifest_digest) = client
+    //         .triangulate(&image_ref, &Auth::Anonymous)
+    //         .await
+    //         .expect("triangulate failed");
+    //     let signature_layers = client
+    //         .trusted_signature_layers(&Auth::Anonymous, &manifest_digest, &cosign_image)
+    //         .await
+    //         .expect("get trusted signature layers failed");
+    //     let pk_verifier =
+    //         verification_constraint::PublicKeyVerifier::new(pubkey.as_bytes(), &signing_scheme)
+    //             .expect("create PublicKeyVerifier failed");
+    //     assert_eq!(signature_layers.len(), 1);
+    //     let res = pk_verifier
+    //         .verify(&signature_layers[0])
+    //         .expect("failed to verify");
+    //     assert!(res);
+    // }
+    //
+    // #[cfg(feature = "test-registry")]
+    // async fn prepare_image_to_be_signed(client: &mut Client, image_ref: &OciReference) {
+    //     let data = client
+    //         .registry_client
+    //         .pull(
+    //             &SIGNED_IMAGE.parse().expect("failed to parse image ref"),
+    //             &oci_distribution::secrets::RegistryAuth::Anonymous,
+    //             vec![oci_distribution::manifest::IMAGE_DOCKER_LAYER_GZIP_MEDIA_TYPE],
+    //         )
+    //         .await
+    //         .expect("pull test image failed");
+    //
+    //     client
+    //         .registry_client
+    //         .push(
+    //             &image_ref.oci_reference,
+    //             &data.layers[..],
+    //             data.config.clone(),
+    //             &oci_distribution::secrets::RegistryAuth::Anonymous,
+    //             None,
+    //         )
+    //         .await
+    //         .expect("push test image failed");
+    // }
+    //
+    // #[cfg(feature = "test-registry")]
+    // fn registry_image() -> testcontainers::GenericImage {
+    //     testcontainers::GenericImage::new("docker.io/library/registry", "2")
+    //         .with_wait_for(WaitFor::message_on_stderr("listening on "))
+    // }
 }

@@ -44,13 +44,13 @@
 //!         Arg::new("log_index")
 //!             .long("log_index")
 //!             .num_args(1)
-//!             .value_parser(clap::value_parser!(i32))
+//!             .value_parser(clap::value_parser!(i64))
 //!             .default_value("1")
 //!             .help("log_index of the artifact"),
 //!     );
 //!
 //!     let flags = matches.get_matches();
-//!     let index: &i32 = flags.get_one("log_index").unwrap();
+//!     let index: &i64 = flags.get_one("log_index").unwrap();
 //!
 //!     let configuration = Configuration::default();
 //!

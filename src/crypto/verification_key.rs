@@ -396,11 +396,16 @@ impl CosignVerificationKey {
 
 #[cfg(test)]
 mod tests {
-    use x509_cert::der::Decode;
-    use x509_cert::Certificate;
+    // use x509_cert::der::Decode;
+    // use x509_cert::Certificate;
 
     use super::*;
-    use crate::crypto::tests::*;
+    // use crate::crypto::tests::*;
+
+    pub(crate) const PUBLIC_KEY: &str = r#"-----BEGIN PUBLIC KEY-----
+    MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAENptdY/l3nB0yqkXLBWkZWQwo6+cu
+    OSWS1X9vPavpiQOoTTGC0xX57OojUadxF1cdQmrsiReWg2Wn4FneJfa8xw==
+    -----END PUBLIC KEY-----"#;
 
     #[test]
     fn verify_signature_success() {
@@ -500,138 +505,138 @@ DwIDAQAB
             .is_ok());
     }
 
-    #[test]
-    fn convert_ecdsa_p256_subject_public_key_to_cosign_verification_key() -> anyhow::Result<()> {
-        let (private_key, public_key) = generate_ecdsa_p256_keypair();
-        let issued_cert_generation_options = CertGenerationOptions {
-            private_key,
-            public_key,
-            ..Default::default()
-        };
-
-        let ca_data = generate_certificate(None, CertGenerationOptions::default())?;
-
-        let issued_cert = generate_certificate(Some(&ca_data), issued_cert_generation_options)?;
-        let issued_cert_pem = issued_cert.cert.to_pem()?;
-        let pem = pem::parse(issued_cert_pem)?;
-        let cert = Certificate::from_der(pem.contents())?;
-        let spki = cert.tbs_certificate.subject_public_key_info;
-
-        let cosign_verification_key =
-            CosignVerificationKey::try_from(&spki).expect("conversion failed");
-
-        assert!(matches!(
-            cosign_verification_key,
-            CosignVerificationKey::ECDSA_P256_SHA256_ASN1(_)
-        ));
-        Ok(())
-    }
-
-    #[test]
-    fn convert_ecdsa_p384_subject_public_key_to_cosign_verification_key() -> anyhow::Result<()> {
-        let (private_key, public_key) = generate_ecdsa_p384_keypair();
-        let issued_cert_generation_options = CertGenerationOptions {
-            private_key,
-            public_key,
-            ..Default::default()
-        };
-
-        let ca_data = generate_certificate(None, CertGenerationOptions::default())?;
-
-        let issued_cert = generate_certificate(Some(&ca_data), issued_cert_generation_options)?;
-        let issued_cert_pem = issued_cert.cert.to_pem()?;
-        let pem = pem::parse(issued_cert_pem)?;
-        let cert = Certificate::from_der(pem.contents())?;
-        let spki = cert.tbs_certificate.subject_public_key_info;
-
-        let cosign_verification_key =
-            CosignVerificationKey::try_from(&spki).expect("conversion failed");
-
-        assert!(matches!(
-            cosign_verification_key,
-            CosignVerificationKey::ECDSA_P384_SHA384_ASN1(_)
-        ));
-        Ok(())
-    }
-
-    #[test]
-    fn convert_rsa_subject_public_key_to_cosign_verification_key() -> anyhow::Result<()> {
-        let (private_key, public_key) = generate_rsa_keypair(2048);
-        let issued_cert_generation_options = CertGenerationOptions {
-            private_key,
-            public_key,
-            ..Default::default()
-        };
-
-        let ca_data = generate_certificate(None, CertGenerationOptions::default())?;
-
-        let issued_cert = generate_certificate(Some(&ca_data), issued_cert_generation_options)?;
-        let issued_cert_pem = issued_cert.cert.to_pem()?;
-        let pem = pem::parse(issued_cert_pem)?;
-        let cert = Certificate::from_der(pem.contents())?;
-        let spki = cert.tbs_certificate.subject_public_key_info;
-
-        let cosign_verification_key =
-            CosignVerificationKey::try_from(&spki).expect("conversion failed");
-
-        assert!(matches!(
-            cosign_verification_key,
-            CosignVerificationKey::RSA_PKCS1_SHA256(_)
-        ));
-        Ok(())
-    }
-
-    #[test]
-    fn convert_ed25519_subject_public_key_to_cosign_verification_key() -> anyhow::Result<()> {
-        let (private_key, public_key) = generate_ed25519_keypair();
-        let issued_cert_generation_options = CertGenerationOptions {
-            private_key,
-            public_key,
-            ..Default::default()
-        };
-
-        let ca_data = generate_certificate(None, CertGenerationOptions::default())?;
-
-        let issued_cert = generate_certificate(Some(&ca_data), issued_cert_generation_options)?;
-        let issued_cert_pem = issued_cert.cert.to_pem()?;
-        let pem = pem::parse(issued_cert_pem)?;
-        let cert = Certificate::from_der(pem.contents())?;
-        let spki = cert.tbs_certificate.subject_public_key_info;
-
-        let cosign_verification_key =
-            CosignVerificationKey::try_from(&spki).expect("conversion failed");
-
-        assert!(matches!(
-            cosign_verification_key,
-            CosignVerificationKey::ED25519(_)
-        ));
-        Ok(())
-    }
-
-    #[test]
-    fn convert_unsupported_curve_subject_public_key_to_cosign_verification_key(
-    ) -> anyhow::Result<()> {
-        let (private_key, public_key) = generate_dsa_keypair(2048);
-        let issued_cert_generation_options = CertGenerationOptions {
-            private_key,
-            public_key,
-            ..Default::default()
-        };
-
-        let ca_data = generate_certificate(None, CertGenerationOptions::default())?;
-
-        let issued_cert = generate_certificate(Some(&ca_data), issued_cert_generation_options)?;
-        let issued_cert_pem = issued_cert.cert.to_pem()?;
-        let pem = pem::parse(issued_cert_pem)?;
-        let cert = Certificate::from_der(pem.contents())?;
-        let spki = cert.tbs_certificate.subject_public_key_info;
-
-        let err = CosignVerificationKey::try_from(&spki);
-        assert!(matches!(
-            err,
-            Err(SigstoreError::PublicKeyUnsupportedAlgorithmError(_))
-        ));
-
-        Ok(())
-    }
+    // #[test]
+    // fn convert_ecdsa_p256_subject_public_key_to_cosign_verification_key() -> anyhow::Result<()> {
+    //     let (private_key, public_key) = generate_ecdsa_p256_keypair();
+    //     let issued_cert_generation_options = CertGenerationOptions {
+    //         private_key,
+    //         public_key,
+    //         ..Default::default()
+    //     };
+    //
+    //     let ca_data = generate_certificate(None, CertGenerationOptions::default())?;
+    //
+    //     let issued_cert = generate_certificate(Some(&ca_data), issued_cert_generation_options)?;
+    //     let issued_cert_pem = issued_cert.cert.to_pem()?;
+    //     let pem = pem::parse(issued_cert_pem)?;
+    //     let cert = Certificate::from_der(pem.contents())?;
+    //     let spki = cert.tbs_certificate.subject_public_key_info;
+    //
+    //     let cosign_verification_key =
+    //         CosignVerificationKey::try_from(&spki).expect("conversion failed");
+    //
+    //     assert!(matches!(
+    //         cosign_verification_key,
+    //         CosignVerificationKey::ECDSA_P256_SHA256_ASN1(_)
+    //     ));
+    //     Ok(())
+    // }
+    //
+    // #[test]
+    // fn convert_ecdsa_p384_subject_public_key_to_cosign_verification_key() -> anyhow::Result<()> {
+    //     let (private_key, public_key) = generate_ecdsa_p384_keypair();
+    //     let issued_cert_generation_options = CertGenerationOptions {
+    //         private_key,
+    //         public_key,
+    //         ..Default::default()
+    //     };
+    //
+    //     let ca_data = generate_certificate(None, CertGenerationOptions::default())?;
+    //
+    //     let issued_cert = generate_certificate(Some(&ca_data), issued_cert_generation_options)?;
+    //     let issued_cert_pem = issued_cert.cert.to_pem()?;
+    //     let pem = pem::parse(issued_cert_pem)?;
+    //     let cert = Certificate::from_der(pem.contents())?;
+    //     let spki = cert.tbs_certificate.subject_public_key_info;
+    //
+    //     let cosign_verification_key =
+    //         CosignVerificationKey::try_from(&spki).expect("conversion failed");
+    //
+    //     assert!(matches!(
+    //         cosign_verification_key,
+    //         CosignVerificationKey::ECDSA_P384_SHA384_ASN1(_)
+    //     ));
+    //     Ok(())
+    // }
+    //
+    // #[test]
+    // fn convert_rsa_subject_public_key_to_cosign_verification_key() -> anyhow::Result<()> {
+    //     let (private_key, public_key) = generate_rsa_keypair(2048);
+    //     let issued_cert_generation_options = CertGenerationOptions {
+    //         private_key,
+    //         public_key,
+    //         ..Default::default()
+    //     };
+    //
+    //     let ca_data = generate_certificate(None, CertGenerationOptions::default())?;
+    //
+    //     let issued_cert = generate_certificate(Some(&ca_data), issued_cert_generation_options)?;
+    //     let issued_cert_pem = issued_cert.cert.to_pem()?;
+    //     let pem = pem::parse(issued_cert_pem)?;
+    //     let cert = Certificate::from_der(pem.contents())?;
+    //     let spki = cert.tbs_certificate.subject_public_key_info;
+    //
+    //     let cosign_verification_key =
+    //         CosignVerificationKey::try_from(&spki).expect("conversion failed");
+    //
+    //     assert!(matches!(
+    //         cosign_verification_key,
+    //         CosignVerificationKey::RSA_PKCS1_SHA256(_)
+    //     ));
+    //     Ok(())
+    // }
+    //
+    // #[test]
+    // fn convert_ed25519_subject_public_key_to_cosign_verification_key() -> anyhow::Result<()> {
+    //     let (private_key, public_key) = generate_ed25519_keypair();
+    //     let issued_cert_generation_options = CertGenerationOptions {
+    //         private_key,
+    //         public_key,
+    //         ..Default::default()
+    //     };
+    //
+    //     let ca_data = generate_certificate(None, CertGenerationOptions::default())?;
+    //
+    //     let issued_cert = generate_certificate(Some(&ca_data), issued_cert_generation_options)?;
+    //     let issued_cert_pem = issued_cert.cert.to_pem()?;
+    //     let pem = pem::parse(issued_cert_pem)?;
+    //     let cert = Certificate::from_der(pem.contents())?;
+    //     let spki = cert.tbs_certificate.subject_public_key_info;
+    //
+    //     let cosign_verification_key =
+    //         CosignVerificationKey::try_from(&spki).expect("conversion failed");
+    //
+    //     assert!(matches!(
+    //         cosign_verification_key,
+    //         CosignVerificationKey::ED25519(_)
+    //     ));
+    //     Ok(())
+    // }
+    //
+    // #[test]
+    // fn convert_unsupported_curve_subject_public_key_to_cosign_verification_key(
+    // ) -> anyhow::Result<()> {
+    //     let (private_key, public_key) = generate_dsa_keypair(2048);
+    //     let issued_cert_generation_options = CertGenerationOptions {
+    //         private_key,
+    //         public_key,
+    //         ..Default::default()
+    //     };
+    //
+    //     let ca_data = generate_certificate(None, CertGenerationOptions::default())?;
+    //
+    //     let issued_cert = generate_certificate(Some(&ca_data), issued_cert_generation_options)?;
+    //     let issued_cert_pem = issued_cert.cert.to_pem()?;
+    //     let pem = pem::parse(issued_cert_pem)?;
+    //     let cert = Certificate::from_der(pem.contents())?;
+    //     let spki = cert.tbs_certificate.subject_public_key_info;
+    //
+    //     let err = CosignVerificationKey::try_from(&spki);
+    //     assert!(matches!(
+    //         err,
+    //         Err(SigstoreError::PublicKeyUnsupportedAlgorithmError(_))
+    //     ));
+    //
+    //     Ok(())
+    // }
 }

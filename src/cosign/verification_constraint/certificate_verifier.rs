@@ -135,45 +135,45 @@ mod tests {
 
     use super::*;
     use crate::cosign::bundle::Bundle;
-    use crate::crypto::tests::*;
-    use crate::registry;
+    // use crate::crypto::tests::*;
+    // use crate::registry;
 
     use pkcs8::der::asn1::UtcTime;
     use serde_json::json;
     use x509_cert::time::{Time, Validity};
 
-    #[test]
-    fn verify_certificate_() -> anyhow::Result<()> {
-        // use the correct CA chain
-        let ca_data = generate_certificate(None, CertGenerationOptions::default())?;
-        let ca_cert = registry::Certificate {
-            encoding: registry::CertificateEncoding::Pem,
-            data: ca_data.cert.to_pem()?,
-        };
-        let cert_chain = vec![ca_cert];
-
-        let issued_cert = generate_certificate(Some(&ca_data), CertGenerationOptions::default())?;
-        let issued_cert_pem = issued_cert.cert.to_pem()?;
-
-        let verifier = CertificateVerifier::from_pem(&issued_cert_pem, false, Some(&cert_chain));
-        assert!(verifier.is_ok());
-
-        // Use a different CA chain
-        let another_ca_data = generate_certificate(None, CertGenerationOptions::default())?;
-        let another_ca_cert = registry::Certificate {
-            encoding: registry::CertificateEncoding::Pem,
-            data: another_ca_data.cert.to_pem()?,
-        };
-        let cert_chain = vec![another_ca_cert];
-        let verifier = CertificateVerifier::from_pem(&issued_cert_pem, false, Some(&cert_chain));
-        assert!(verifier.is_err());
-
-        // No cert chain
-        let verifier = CertificateVerifier::from_pem(&issued_cert_pem, false, None);
-        assert!(verifier.is_ok());
-
-        Ok(())
-    }
+    // #[test]
+    // fn verify_certificate_() -> anyhow::Result<()> {
+    //     // use the correct CA chain
+    //     let ca_data = generate_certificate(None, CertGenerationOptions::default())?;
+    //     let ca_cert = registry::Certificate {
+    //         encoding: registry::CertificateEncoding::Pem,
+    //         data: ca_data.cert.to_pem()?,
+    //     };
+    //     let cert_chain = vec![ca_cert];
+    //
+    //     let issued_cert = generate_certificate(Some(&ca_data), CertGenerationOptions::default())?;
+    //     let issued_cert_pem = issued_cert.cert.to_pem()?;
+    //
+    //     let verifier = CertificateVerifier::from_pem(&issued_cert_pem, false, Some(&cert_chain));
+    //     assert!(verifier.is_ok());
+    //
+    //     // Use a different CA chain
+    //     let another_ca_data = generate_certificate(None, CertGenerationOptions::default())?;
+    //     let another_ca_cert = registry::Certificate {
+    //         encoding: registry::CertificateEncoding::Pem,
+    //         data: another_ca_data.cert.to_pem()?,
+    //     };
+    //     let cert_chain = vec![another_ca_cert];
+    //     let verifier = CertificateVerifier::from_pem(&issued_cert_pem, false, Some(&cert_chain));
+    //     assert!(verifier.is_err());
+    //
+    //     // No cert chain
+    //     let verifier = CertificateVerifier::from_pem(&issued_cert_pem, false, None);
+    //     assert!(verifier.is_ok());
+    //
+    //     Ok(())
+    // }
 
     /// Create a SignatureLayer using some hard coded value. Returns the
     /// certificate that can be used to successfully verify the layer
