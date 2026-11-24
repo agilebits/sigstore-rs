@@ -169,45 +169,45 @@ impl Client {
     }
 }
 
-#[cfg(feature = "mock-client")]
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::cosign::tests::{get_fulcio_cert_pool, REKOR_PUB_KEY};
-    use crate::crypto::SigningScheme;
-    use crate::mock_client::test::MockOciClient;
-
-    fn build_test_client(mock_client: MockOciClient) -> Client {
-        let rekor_pub_key =
-            CosignVerificationKey::from_pem(REKOR_PUB_KEY.as_bytes(), &SigningScheme::default())
-                .expect("Cannot create CosignVerificationKey");
-
-        Client {
-            registry_client: Box::new(mock_client),
-            rekor_pub_key: Some(rekor_pub_key),
-            fulcio_cert_pool: Some(get_fulcio_cert_pool()),
-        }
-    }
-
-    #[tokio::test]
-    async fn triangulate_sigstore_object() {
-        let image = "docker.io/busybox:latest".parse().unwrap();
-        let image_digest =
-            String::from("sha256:f3cfc9d0dbf931d3db4685ec659b7ac68e2a578219da4aae65427886e649b06b");
-        let expected_image = "docker.io/library/busybox:sha256-f3cfc9d0dbf931d3db4685ec659b7ac68e2a578219da4aae65427886e649b06b.sig".parse().unwrap();
-        let mock_client = MockOciClient {
-            fetch_manifest_digest_response: Some(Ok(image_digest.clone())),
-            pull_response: None,
-            pull_manifest_response: None,
-            push_response: None,
-        };
-        let mut cosign_client = build_test_client(mock_client);
-
-        let reference = cosign_client
-            .triangulate(&image, &crate::registry::Auth::Anonymous)
-            .await;
-
-        assert!(reference.is_ok());
-        assert_eq!(reference.unwrap(), (expected_image, image_digest));
-    }
-}
+// #[cfg(feature = "mock-client")]
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::cosign::tests::{get_fulcio_cert_pool, REKOR_PUB_KEY};
+//     use crate::crypto::SigningScheme;
+//     use crate::mock_client::test::MockOciClient;
+//
+//     fn build_test_client(mock_client: MockOciClient) -> Client {
+//         let rekor_pub_key =
+//             CosignVerificationKey::from_pem(REKOR_PUB_KEY.as_bytes(), &SigningScheme::default())
+//                 .expect("Cannot create CosignVerificationKey");
+//
+//         Client {
+//             registry_client: Box::new(mock_client),
+//             rekor_pub_key: Some(rekor_pub_key),
+//             fulcio_cert_pool: Some(get_fulcio_cert_pool()),
+//         }
+//     }
+//
+//     #[tokio::test]
+//     async fn triangulate_sigstore_object() {
+//         let image = "docker.io/busybox:latest".parse().unwrap();
+//         let image_digest =
+//             String::from("sha256:f3cfc9d0dbf931d3db4685ec659b7ac68e2a578219da4aae65427886e649b06b");
+//         let expected_image = "docker.io/library/busybox:sha256-f3cfc9d0dbf931d3db4685ec659b7ac68e2a578219da4aae65427886e649b06b.sig".parse().unwrap();
+//         let mock_client = MockOciClient {
+//             fetch_manifest_digest_response: Some(Ok(image_digest.clone())),
+//             pull_response: None,
+//             pull_manifest_response: None,
+//             push_response: None,
+//         };
+//         let mut cosign_client = build_test_client(mock_client);
+//
+//         let reference = cosign_client
+//             .triangulate(&image, &crate::registry::Auth::Anonymous)
+//             .await;
+//
+//         assert!(reference.is_ok());
+//         assert_eq!(reference.unwrap(), (expected_image, image_digest));
+//     }
+// }

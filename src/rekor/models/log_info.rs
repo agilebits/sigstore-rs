@@ -99,7 +99,7 @@ impl LogInfo {
 
         self.signed_tree_head
             .is_valid_for_proof(&hex_to_hash_output(&self.root_hash)?, self.tree_size as u64)?;
-        consistency_proof.verify(old_size, old_root, self.tree_size as _)?;
+        consistency_proof.verify(old_size, old_root, self.tree_size as _, &self.root_hash)?;
         Ok(())
     }
 }

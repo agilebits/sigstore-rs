@@ -69,7 +69,7 @@ pub async fn get_log_info(
 /// Returns a list of hashes for specified tree sizes that can be used to confirm the consistency of the transparency log
 pub async fn get_log_proof(
     configuration: &configuration::Configuration,
-    last_size: i32,
+    last_size: i64,
     first_size: Option<&str>,
     tree_id: Option<&str>,
 ) -> Result<crate::rekor::models::ConsistencyProof, Error<GetLogProofError>> {

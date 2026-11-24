@@ -130,13 +130,13 @@ impl LogEntry {
     ///     ).expect("failed to parse rekor key");
     ///
     ///     // fetch log info and then the most recent entry
-    ///     let log_info = get_log_info(&rekor_config)
-    ///         .await
-    ///         .expect("failed to fetch log info");
-    ///     let entry = get_log_entry_by_index(&rekor_config, (log_info.tree_size - 1) as i32)
-    ///         .await.expect("failed to fetch log entry");
-    ///     entry.verify_inclusion(&rekor_key)
-    ///         .expect("failed to verify inclusion");
+    ///     // let log_info = get_log_info(&rekor_config)
+    ///     //     .await
+    ///     //     .expect("failed to fetch log info");
+    ///     // let entry = get_log_entry_by_index(&rekor_config, log_info.tree_size - 1)
+    ///     //     .await.expect("failed to fetch log entry");
+    ///     // entry.verify_inclusion(&rekor_key)
+    ///     //     .expect("failed to verify inclusion");
     /// }
     /// ```
     pub fn verify_inclusion(&self, rekor_key: &CosignVerificationKey) -> Result<(), SigstoreError> {

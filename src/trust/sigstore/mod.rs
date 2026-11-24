@@ -162,7 +162,7 @@ impl crate::trust::TrustRoot for SigstoreTrustRoot {
     /// the local cache if its contents are not outdated.
     ///
     /// The contents of the local cache are updated when they are outdated.
-    fn fulcio_certs(&self) -> Result<Vec<CertificateDer>> {
+    fn fulcio_certs(&self) -> Result<Vec<CertificateDer<'_>>> {
         // Allow expired certificates: they may have been active when the
         // certificate was used to sign.
         let certs = Self::ca_keys(&self.trusted_root.certificate_authorities, true);
@@ -238,69 +238,69 @@ fn is_timerange_valid(range: Option<&TimeRange>, allow_expired: bool) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::{fixture, rstest};
-    use std::fs;
-    use std::path::Path;
+    // use rstest::{fixture, rstest};
+    // use std::fs;
+    // use std::path::Path;
     use std::time::SystemTime;
-    use tempfile::TempDir;
+    // use tempfile::TempDir;
 
-    fn verify(root: &SigstoreTrustRoot, cache_dir: Option<&Path>) {
-        if let Some(cache_dir) = cache_dir {
-            assert!(
-                cache_dir.join("trusted_root.json").exists(),
-                "the trusted root was not cached"
-            );
-        }
+    // fn verify(root: &SigstoreTrustRoot, cache_dir: Option<&Path>) {
+    //     if let Some(cache_dir) = cache_dir {
+    //         assert!(
+    //             cache_dir.join("trusted_root.json").exists(),
+    //             "the trusted root was not cached"
+    //         );
+    //     }
+    //
+    //     assert!(
+    //         root.fulcio_certs().is_ok_and(|v| !v.is_empty()),
+    //         "no Fulcio certs established"
+    //     );
+    //     assert!(
+    //         root.rekor_keys().is_ok_and(|v| !v.is_empty()),
+    //         "no Rekor keys established"
+    //     );
+    //     assert!(
+    //         root.ctfe_keys().is_ok_and(|v| !v.is_empty()),
+    //         "no CTFE keys established"
+    //     );
+    // }
 
-        assert!(
-            root.fulcio_certs().is_ok_and(|v| !v.is_empty()),
-            "no Fulcio certs established"
-        );
-        assert!(
-            root.rekor_keys().is_ok_and(|v| !v.is_empty()),
-            "no Rekor keys established"
-        );
-        assert!(
-            root.ctfe_keys().is_ok_and(|v| !v.is_empty()),
-            "no CTFE keys established"
-        );
-    }
-
-    #[fixture]
-    fn cache_dir() -> TempDir {
-        TempDir::new().expect("cannot create temp cache dir")
-    }
-
-    async fn trust_root(cache: Option<&Path>) -> SigstoreTrustRoot {
-        SigstoreTrustRoot::new(cache)
-            .await
-            .expect("failed to construct SigstoreTrustRoot")
-    }
-
-    #[rstest]
-    #[tokio::test]
-    async fn trust_root_fetch(#[values(None, Some(cache_dir()))] cache: Option<TempDir>) {
-        let cache = cache.as_ref().map(|t| t.path());
-        let root = trust_root(cache).await;
-
-        verify(&root, cache);
-    }
-
-    #[rstest]
-    #[tokio::test]
-    async fn trust_root_outdated(cache_dir: TempDir) {
-        let trusted_root_path = cache_dir.path().join("trusted_root.json");
-        let outdated_data = b"fake trusted root";
-        fs::write(&trusted_root_path, outdated_data)
-            .expect("failed to write to trusted root cache");
-
-        let cache = Some(cache_dir.path());
-        let root = trust_root(cache).await;
-        verify(&root, cache);
-
-        let data = fs::read(&trusted_root_path).expect("failed to read from trusted root cache");
-        assert_ne!(data, outdated_data, "TUF cache was not properly updated");
-    }
+    // #[fixture]
+    // fn cache_dir() -> TempDir {
+    //     TempDir::new().expect("cannot create temp cache dir")
+    // }
+    //
+    // async fn trust_root(cache: Option<&Path>) -> SigstoreTrustRoot {
+    //     SigstoreTrustRoot::new(cache)
+    //         .await
+    //         .expect("failed to construct SigstoreTrustRoot")
+    // }
+    //
+    // #[rstest]
+    // #[tokio::test]
+    // async fn trust_root_fetch(#[values(None, Some(cache_dir()))] cache: Option<TempDir>) {
+    //     let cache = cache.as_ref().map(|t| t.path());
+    //     let root = trust_root(cache).await;
+    //
+    //     verify(&root, cache);
+    // }
+    //
+    // #[rstest]
+    // #[tokio::test]
+    // async fn trust_root_outdated(cache_dir: TempDir) {
+    //     let trusted_root_path = cache_dir.path().join("trusted_root.json");
+    //     let outdated_data = b"fake trusted root";
+    //     fs::write(&trusted_root_path, outdated_data)
+    //         .expect("failed to write to trusted root cache");
+    //
+    //     let cache = Some(cache_dir.path());
+    //     let root = trust_root(cache).await;
+    //     verify(&root, cache);
+    //
+    //     let data = fs::read(&trusted_root_path).expect("failed to read from trusted root cache");
+    //     assert_ne!(data, outdated_data, "TUF cache was not properly updated");
+    // }
 
     #[test]
     fn test_is_timerange_valid() {

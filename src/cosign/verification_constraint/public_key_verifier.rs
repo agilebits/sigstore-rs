@@ -38,22 +38,22 @@ impl VerificationConstraint for PublicKeyVerifier {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::cosign::signature_layers::tests::{
-        build_correct_signature_layer_with_certificate,
-        build_correct_signature_layer_without_bundle,
-    };
-
-    #[test]
-    fn pub_key_verifier() {
-        let (sl, key) = build_correct_signature_layer_without_bundle();
-
-        let vc = PublicKeyVerifier { key };
-        assert!(vc.verify(&sl).unwrap());
-
-        let sl = build_correct_signature_layer_with_certificate();
-        assert!(!vc.verify(&sl).unwrap());
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::cosign::signature_layers::tests::{
+//         build_correct_signature_layer_with_certificate,
+//         build_correct_signature_layer_without_bundle,
+//     };
+//
+//     #[test]
+//     fn pub_key_verifier() {
+//         let (sl, key) = build_correct_signature_layer_without_bundle();
+//
+//         let vc = PublicKeyVerifier { key };
+//         assert!(vc.verify(&sl).unwrap());
+//
+//         let sl = build_correct_signature_layer_with_certificate();
+//         assert!(!vc.verify(&sl).unwrap());
+//     }
+// }

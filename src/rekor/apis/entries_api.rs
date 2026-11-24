@@ -108,7 +108,7 @@ pub async fn create_log_entry(
 /// Fetches the specified entry from the transparency log using the log index
 pub async fn get_log_entry_by_index(
     configuration: &configuration::Configuration,
-    log_index: i32,
+    log_index: i64,
 ) -> Result<LogEntry, Error<GetLogEntryByIndexError>> {
     let local_var_client = &configuration.client;
 

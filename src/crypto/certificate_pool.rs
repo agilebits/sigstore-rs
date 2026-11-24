@@ -138,7 +138,7 @@ impl<'a> CertificatePool<'a> {
         cert.verify_for_usage(
             signing_algs,
             &self.trusted_roots,
-            &intermediates,
+            intermediates,
             verification_time,
             KeyUsage::required_if_present(eku_code_signing),
             revocation,

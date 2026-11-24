@@ -28,12 +28,19 @@ impl ConsistencyProof {
         ConsistencyProof { root_hash, hashes }
     }
 
-    /// Verify this consistency proof against the given parameters.
+    /// Verify this consistency proof between the tree of `old_size` with root `old_root`
+    /// and the tree of `new_size` with root `new_root`.
+    ///
+    /// `new_root` must be the root hash of the tree at `new_size`, e.g. taken from a
+    /// signed checkpoint. The `root_hash` returned alongside the proof is not used, since
+    /// Rekor reports the log's latest root there, which differs from the root at
+    /// `new_size` whenever the log has grown since `new_size` was observed.
     pub fn verify(
         &self,
         old_size: usize,
         old_root: &str,
         new_size: usize,
+        new_root: &str,
     ) -> Result<(), SigstoreError> {
         // decode hashes from hex and convert them to the required data structure
         // immediately return an error when conversion fails
@@ -44,7 +51,7 @@ impl ConsistencyProof {
             .collect::<Result<Vec<_>, _>>()?;
 
         let old_root = hex_to_hash_output(old_root)?;
-        let new_root = hex_to_hash_output(&self.root_hash)?;
+        let new_root = hex_to_hash_output(new_root)?;
 
         Rfc6269Default::verify_consistency(old_size, new_size, &proof_hashes, &old_root, &new_root)
             .map_err(ConsistencyProofError)
